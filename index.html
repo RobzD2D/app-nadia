@@ -143,8 +143,20 @@ h1,h2,h3,p{margin:0;}
   display:flex;align-items:center;gap:6px;padding:9px;border-radius:30px;background:var(--acc2);
   box-shadow:0 16px 34px rgba(var(--accsh),.38),inset 0 1px 0 rgba(255,255,255,.22);
   transition:background .4s ease;}
-.nav button{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;transition:background .25s;}
-.nav button.on{background:#fff;}
+.nav button{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;
+  position:relative;transition:background .25s ease;}
+.nav button.on{background:#fff;color:var(--acc2);}
+.nav button svg{transform-origin:50% 50%;}
+.nav button.heart{animation:heartbeat 1.5s ease-in-out infinite;transform-origin:50% 50%;}
+@keyframes heartbeat{
+  0%{transform:scale(1)}
+  9%{transform:scale(1.18)}
+  17%{transform:scale(1.01)}
+  26%{transform:scale(1.12)}
+  38%{transform:scale(1)}
+  100%{transform:scale(1)}
+}
+@media (prefers-reduced-motion:reduce){ .nav button.heart{animation:none} }
 .back{width:40px;height:40px;border-radius:14px;background:#fff;display:grid;place-items:center;
   box-shadow:0 6px 16px rgba(var(--sh),.1);}
 </style>
@@ -485,12 +497,29 @@ function render(){
       '<button data-act="tab" data-tab="player">'+ic('chevron',16,'#fff')+'</button></div>'
     : '';
 
-  var tabs = [['home','home'],['library','activity'],['stats','chart'],['profile','user']];
-  navEl.innerHTML = tabs.map(function(t){
-    var on = S.tab===t[0] || (t[0]==='library' && S.tab==='player');
-    return '<button class="'+(on?'on':'')+'" data-act="tab" data-tab="'+t[0]+'" aria-label="'+t[0]+'">'+
-      ic(t[1],21,on?T.acc2:'#FFFFFF')+'</button>';
+  syncNav();
+}
+
+/* le menu est construit une fois pour toutes : les icônes héritent de la couleur via currentColor,
+   donc un simple changement de classe suffit au changement d'onglet et de thème */
+var TABS = [['home','home'],['library','activity'],['stats','chart'],['profile','user']];
+
+function buildNav(){
+  navEl.innerHTML = TABS.map(function(t){
+    return '<button data-act="tab" data-tab="'+t[0]+'" aria-label="'+t[0]+'">'+ic(t[1],21,'currentColor')+'</button>';
   }).join('');
+}
+
+function syncNav(){
+  var btns = navEl.children;
+  for(var i=0;i<btns.length;i++){
+    var key = TABS[i][0];
+    var on = S.tab===key || (key==='library' && S.tab==='player');
+    btns[i].classList.toggle('on', on);
+    /* le battement ne tourne que sur l’icône home, quand l’accueil est affiché */
+    btns[i].classList.toggle('heart', key==='home' && on);
+    btns[i].setAttribute('aria-current', on ? 'page' : 'false');
+  }
 }
 
 /* ---------- interactions ---------- */
@@ -511,6 +540,7 @@ document.addEventListener('click', function(e){
   }
   else if(act==='toggle'){ S.autoPaused = false; S.running = !S.running; }
   else if(act==='theme'){ applyTheme(el.getAttribute('data-theme')); }
+
   render();
 });
 
@@ -532,6 +562,7 @@ document.addEventListener('visibilitychange', function(){
 });
 
 applyTheme('lagon');
+buildNav();
 render();
 </script>
 </body>
